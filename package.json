@@ -2,7 +2,7 @@
   "name": "tmi",
   "version": "3.0.0",
   "description": "",
-  "main": "connection.js",
+  "main": "app.js",
   "dependencies": {
     "mongoose": "^5.4.1",
     "tmi.js": "^1.2.1",

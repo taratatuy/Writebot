@@ -1,4 +1,4 @@
-const config = require('../config');
+const { BotAuthData } = require('../config');
 const mongoose = require('mongoose');
 const models = require('./models');
 
@@ -14,7 +14,7 @@ new Promise((resolve, reject) => {
     });
 
   mongoose.connect(
-    config.MONGO_URL,
+    BotAuthData.MongoUrl,
     { useNewUrlParser: true }
   );
 }).catch(err => {
@@ -154,6 +154,19 @@ function CreateSub(channel, name, streak) {
     });
 }
 
+function CreateLink(channel, name, message) {
+  models.links
+    .create({
+      channel: channel,
+      name: name,
+      time: TimeFormating(new Date()),
+      message: message
+    })
+    .catch(err => {
+      console.log('DB link create error:', err);
+    });
+}
+
 function TimeFormating(time) {
   return `${time.getDate()}.${time.getMonth() +
     1}.${time.getFullYear()} ${time.getHours()}:${time.getMinutes()}`;
@@ -165,5 +178,6 @@ module.exports = {
   CreateSub,
   FindLastseen,
   FindBan,
-  CreateTimeLastseen
+  CreateTimeLastseen,
+  CreateLink
 };

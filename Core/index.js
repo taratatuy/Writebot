@@ -1,26 +1,27 @@
 const tmi = require('tmi.js');
-const config = require('./config.js');
+const { BotAuthData } = require('./config.js');
+const { EnabledCommands } = require('./config.js');
 const {
   knownCommands,
   knownModCommands,
   knownNoncommands
 } = require('./commands');
 const database = require('./database');
-const myEvantsChannel = require('./MyEvants.js').channel;
+// const eventsChannel = require('../Events.js');
 
 const options = {
   options: {
-    clientId: config.client_id
-    // debug: true
+    clientId: BotAuthData.client_id,
+    debug: true
   },
   connection: {
     reconnect: true
   },
   identity: {
-    username: config.BOTUSERNAME,
-    password: config.TOKEN
+    username: BotAuthData.Username,
+    password: BotAuthData.Token
   },
-  channels: config.BOTSCHANNELS
+  channels: BotAuthData.Channels
 };
 
 const client = new tmi.client(options);
@@ -38,9 +39,9 @@ client.on('join', onJoinHandler);
 client.on('part', onPartHandler);
 
 function onMessageHandler(target, context, msg, self) {
-  console.log(
-    `[${target} (${context['message-type']})] ${context.username}: ${msg}`
-  );
+  // console.log(
+  //   `[${target} (${context['message-type']})] ${context.username}: ${msg}`
+  // );
 
   database.CreateLastseen(target, context.username);
 
@@ -66,20 +67,29 @@ function onMessageHandler(target, context, msg, self) {
         const command = knownModCommands[commandName];
         command(target, context, params);
         console.log(
-          `* Executed ${commandName} command for ${context.username}`
+          `* Executed ${commandName} modcommand for ${context.username}`
         );
       }
     }
     return;
   }
 
-  parse.forEach(word => {
-    if (word in knownNoncommands) {
-      const noncommmand = knownNoncommands[word];
-      noncommmand(target, context);
-      console.log(`* Executed ${word} command for ${context.username}`);
+  if (msg.includes('http')) {
+    if ('http' in knownNoncommands) {
+      const linkSaving = knownNoncommands['http'];
+      linkSaving(target, context, msg);
+      console.log(`* Executed http noncommand for ${context.username}`);
     }
-  });
+  }
+
+  for (var word of parse) {
+    if (word.trim(',', '?', '!', '.', ')', '(') in knownNoncommands) {
+      const noncommmand = knownNoncommands[word];
+      noncommmand(target, context, msg);
+      console.log(`* Executed ${word} noncommand for ${context.username}`);
+      break;
+    }
+  }
 }
 
 function onSubscriptionHendler(channel, username) {
@@ -102,25 +112,29 @@ function onTimeoutHandler(channel, username, reason, duration) {
   var message = `@${username} на в ебас `;
   message += global.botContext.subscriber ? 'akroVebas' : 'Poooound';
   database.CreateBan(channel, username, 'timeout', reason, duration);
-  client.say(channel, message);
+  if (EnabledCommands.BanMessage) {
+    client.say(channel, message);
+  }
 }
 
 function onBanHandler(channel, username, reason) {
   var message = `@${username} на в ебас `;
   message += global.botContext.subscriber ? 'akroVebas' : 'Poooound';
   database.CreateBan(channel, username, 'ban', reason, 'permanently');
-  client.say(channel, message);
+  if (EnabledCommands.BanMessage) {
+    client.say(channel, message);
+  }
 }
 
 function onJoinHandler(channel, username) {
   //self
-  myEvantsChannel.emit('join', channel, username);
+  // eventsChannel.emit('join', channel, username);
   database.CreateLastseen(channel, username);
 }
 
 function onPartHandler(channel, username) {
   //self
-  myEvantsChannel.emit('part', channel, username);
+  // eventsChannel.emit('part', channel, username);
   database.CreateLastseen(channel, username);
 }
 
@@ -129,8 +143,8 @@ function onConnectedHandler(addr, port) {
 }
 
 function onDisconnectedHandler(reason) {
-  console.log(`Disconnected: ${reason}`);
-  process.exit(1);
+  console.log(`Disconnected:  ` + reason);
+  // process.exit(1);
 }
 
 exports.sendMessage = function(target, context, message) {

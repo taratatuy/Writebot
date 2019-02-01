@@ -1,4 +1,5 @@
 node_modules
-parser
+/Core/parser
 package-lock.json
-.env
+/Core/.env
+/spamClient/myBots.js
